@@ -20,6 +20,9 @@ func Unpack(inputString string) (string, error) {
 		currentSymbol := string(symbolRune)
 		switch {
 		case nextSymbolEscaped:
+			if !(unicode.IsDigit(symbolRune) || currentSymbol == escapeSymbol) {
+				return "", ErrInvalidString
+			}
 			targetToRepeat = currentSymbol
 			nextSymbolEscaped = false
 
