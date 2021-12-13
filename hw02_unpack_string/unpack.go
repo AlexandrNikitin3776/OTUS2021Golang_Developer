@@ -25,6 +25,7 @@ func Unpack(inputString string) (string, error) {
 
 		case currentSymbol == escapeSymbol:
 			resultBuilder.WriteString(targetToRepeat)
+			targetToRepeat = ""
 			nextSymbolEscaped = true
 
 		case unicode.IsDigit(symbolRune):
