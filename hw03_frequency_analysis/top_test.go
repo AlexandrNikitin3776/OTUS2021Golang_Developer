@@ -50,16 +50,29 @@ func TestTop10(t *testing.T) {
 
 	t.Run("readme example", func(t *testing.T) {
 		inputText := "cat and dog, one dog,two cats and one man"
-		expected := []string{
-			"and",
-			"one",
-			"cat",
-			"cats",
-			"dog,",
-			"dog,two",
-			"man",
+		if taskWithAsteriskIsCompleted {
+			expected := []string{
+				"and",
+				"dog",
+				"one",
+				"cat",
+				"cats",
+				"man",
+				"two",
+			}
+			require.Equal(t, expected, Top10(inputText))
+		} else {
+			expected := []string{
+				"and",
+				"one",
+				"cat",
+				"cats",
+				"dog,",
+				"dog,two",
+				"man",
+			}
+			require.Equal(t, expected, Top10(inputText))
 		}
-		require.Equal(t, expected, Top10(inputText))
 	})
 
 	t.Run("positive test", func(t *testing.T) {

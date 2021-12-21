@@ -1,6 +1,7 @@
 package hw03frequencyanalysis
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -13,18 +14,19 @@ type WordCount struct {
 const topWordsCount = 10
 
 func Top10(text string) []string {
+	re := regexp.MustCompile(`\p{L}+-\p{L}+|\p{L}+`)
+	words := re.FindAllString(text, -1)
+
 	frequencyMap := make(map[string]int)
-
-	words := strings.Fields(text)
-
 	for _, word := range words {
-		frequencyMap[word]++
+		frequencyMap[strings.ToLower(word)]++
 	}
 
 	wordSlice := make([]WordCount, 0, len(words))
 	for word, count := range frequencyMap {
 		wordSlice = append(wordSlice, WordCount{word, count})
 	}
+
 	sort.Slice(wordSlice, func(i, j int) bool {
 		if wordSlice[i].count == wordSlice[j].count {
 			return wordSlice[i].text < wordSlice[j].text
