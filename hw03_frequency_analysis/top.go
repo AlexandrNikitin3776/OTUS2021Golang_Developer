@@ -18,10 +18,10 @@ func Top10(text string) []string {
 	words := strings.Fields(text)
 
 	for _, word := range words {
-		frequencyMap[word] += 1
+		frequencyMap[word]++
 	}
 
-	var wordSlice []WordCount
+	wordSlice := make([]WordCount, 0, len(words))
 	for word, count := range frequencyMap {
 		wordSlice = append(wordSlice, WordCount{word, count})
 	}
@@ -32,7 +32,7 @@ func Top10(text string) []string {
 		return wordSlice[i].count > wordSlice[j].count
 	})
 
-	var result []string
+	result := make([]string, 0, 10)
 	var upperIndex int
 
 	if len(wordSlice) >= topWordsCount {
