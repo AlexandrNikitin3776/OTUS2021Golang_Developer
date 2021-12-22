@@ -120,9 +120,21 @@ func TestGetWordsFromText(t *testing.T) {
 		{name: "one word", text: "one", expected: []string{"one"}},
 		{name: "two words", text: "one two", expected: []string{"one", "two"}},
 		{name: "three cyryllyc words", text: "Раз два три", expected: []string{"Раз", "два", "три"}},
-		{name: "with hyphen and dash", text: "Какой-либо - это не какой-то", expected: []string{"Какой-либо", "это", "не", "какой-то"}},
-		{name: "with hyphens", text: "тра-та-та-та-та туда-сюда-оттуда", expected: []string{"тра-та-та-та-та", "туда-сюда-оттуда"}},
-		{name: "with punctuation", text: "\"Василий Косяков\" - человек,пароход,имя и фамилия!", expected: []string{"Василий", "Косяков", "человек", "пароход", "имя", "и", "фамилия"}},
+		{
+			name:     "with hyphen and dash",
+			text:     "Какой-либо - это не какой-то",
+			expected: []string{"Какой-либо", "это", "не", "какой-то"},
+		},
+		{
+			name:     "with hyphens",
+			text:     "тра-та-та-та-та туда-сюда-оттуда",
+			expected: []string{"тра-та-та-та-та", "туда-сюда-оттуда"},
+		},
+		{
+			name:     "with punctuation",
+			text:     "\"Василий Косяков\" - человек,пароход,имя и фамилия!",
+			expected: []string{"Василий", "Косяков", "человек", "пароход", "имя", "и", "фамилия"},
+		},
 		{name: "with numbers", text: "АК-47 99-го года", expected: []string{"АК-47", "99-го", "года"}},
 	}
 
@@ -204,6 +216,7 @@ func TestMinOfTwo(t *testing.T) {
 		})
 	}
 }
+
 func TestSortSliceByMapValues(t *testing.T) {
 	tableTests := []struct {
 		name     string
