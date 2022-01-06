@@ -42,10 +42,68 @@ func TestList(t *testing.T) {
 		l.MoveToFront(l.Front()) // [80, 60, 40, 10, 30, 50, 70]
 		l.MoveToFront(l.Back())  // [70, 80, 60, 40, 10, 30, 50]
 
-		elems := make([]int, 0, l.Len())
-		for i := l.Front(); i != nil; i = i.Next {
-			elems = append(elems, i.Value.(int))
-		}
-		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
+		elems := convertListToSLice(l)
+		require.Equal(t, []interface{}{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+
+	t.Run("empty list push front", func(t *testing.T) {
+		l := NewList()
+		insertedItem := l.PushFront("some item")
+
+		require.Equal(t, l.Front(), insertedItem)
+		require.Equal(t, l.Back(), insertedItem)
+	})
+
+	t.Run("empty list push back", func(t *testing.T) {
+		l := NewList()
+		insertedItem := l.PushBack("some item")
+
+		require.Equal(t, l.Front(), insertedItem)
+		require.Equal(t, l.Back(), insertedItem)
+	})
+
+	t.Run("remove last element", func(t *testing.T) {
+		l := NewList()
+		insertedItem := l.PushFront("some item")
+		l.Remove(insertedItem)
+
+		require.Equal(t, 0, l.Len())
+		require.Nil(t, l.Front())
+		require.Nil(t, l.Back())
+	})
+
+	t.Run("move to front one element list", func(t *testing.T) {
+		l := NewList()
+		insertedItem := l.PushFront("some item")
+
+		l.MoveToFront(insertedItem)
+
+		require.Equal(t, l.Front(), insertedItem)
+		require.Equal(t, l.Back(), insertedItem)
+	})
+
+	t.Run("move to front two element list", func(t *testing.T) {
+		l := NewList()
+		firstItem := l.PushFront("first item")
+		secondItem := l.PushBack("second item")
+
+		elems := convertListToSLice(l)
+		require.Equal(t, []interface{}{firstItem.Value, secondItem.Value}, elems)
+
+		l.MoveToFront(secondItem)
+
+		elems = convertListToSLice(l)
+		require.Equal(t, []interface{}{secondItem.Value, firstItem.Value}, elems)
+
+		require.Equal(t, l.Front(), secondItem)
+		require.Equal(t, l.Back(), firstItem)
+	})
+}
+
+func convertListToSLice(l List) []interface{} {
+	elems := make([]interface{}, 0, l.Len())
+	for i := l.Front(); i != nil; i = i.Next {
+		elems = append(elems, i.Value)
+	}
+	return elems
 }
