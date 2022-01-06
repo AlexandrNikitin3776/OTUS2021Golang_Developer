@@ -98,7 +98,7 @@ func (l *list) MoveToFront(i *ListItem) {
 	if l.firstItem == i {
 		return
 	} else if l.lastItem == i {
-		i.Prev.Next = i.Next
+		i.Prev.Next = nil
 		l.lastItem = i.Prev
 	} else {
 		i.Prev.Next = i.Next
