@@ -50,7 +50,44 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(10)
+		var testKey Key = "aaa"
+		testValue := 100
+
+		c.Set(testKey, testValue)
+		cacheValue, ok := c.Get(testKey)
+		require.True(t, ok)
+		require.Equal(t, 100, cacheValue)
+
+		c.Clear()
+		_, ok = c.Get(testKey)
+		require.False(t, ok)
+	})
+
+	t.Run("set overflow", func(t *testing.T) {
+		c := NewCache(3)
+		for i := 0; i < 4; i++ {
+			c.Set(Key(strconv.Itoa(i)), i)
+		}
+
+		_, ok := c.Get("0")
+		require.False(t, ok)
+	})
+
+	t.Run("overflow not used elements", func(t *testing.T) {
+		c := NewCache(3)
+		for i := 0; i < 3; i++ {
+			c.Set(Key(strconv.Itoa(i)), i)
+		}
+
+		c.Get("0")
+		c.Set("3", 3)
+
+		_, ok := c.Get("0")
+		require.True(t, ok)
+
+		_, ok = c.Get("1")
+		require.False(t, ok)
 	})
 }
 
