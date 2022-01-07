@@ -95,12 +95,13 @@ func (l *list) Remove(i *ListItem) {
 }
 
 func (l *list) MoveToFront(i *ListItem) {
-	if l.firstItem == i {
+	switch {
+	case l.firstItem == i:
 		return
-	} else if l.lastItem == i {
+	case l.lastItem == i:
 		i.Prev.Next = nil
 		l.lastItem = i.Prev
-	} else {
+	default:
 		i.Prev.Next = i.Next
 		i.Next.Prev = i.Prev
 	}
