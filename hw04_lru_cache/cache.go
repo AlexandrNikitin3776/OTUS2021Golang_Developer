@@ -32,25 +32,25 @@ func NewCache(capacity int) Cache {
 
 func (cache *lruCache) Set(key Key, value interface{}) bool {
 	cache.lock.Lock()
-	ok := cache.SetItem(key, value)
+	ok := cache.setItem(key, value)
 	cache.lock.Unlock()
 	return ok
 }
 
 func (cache *lruCache) Get(key Key) (interface{}, bool) {
 	cache.lock.Lock()
-	value, ok := cache.GetItem(key)
+	value, ok := cache.getItem(key)
 	cache.lock.Unlock()
 	return value, ok
 }
 
 func (cache *lruCache) Clear() {
 	cache.lock.Lock()
-	cache.ClearCache()
+	cache.clearCache()
 	cache.lock.Unlock()
 }
 
-func (cache *lruCache) SetItem(key Key, value interface{}) bool {
+func (cache *lruCache) setItem(key Key, value interface{}) bool {
 	if item, ok := cache.items[key]; ok {
 		cache.queue.MoveToFront(item)
 		item.Value.(*cacheItem).value = value
@@ -69,7 +69,7 @@ func (cache *lruCache) SetItem(key Key, value interface{}) bool {
 	return false
 }
 
-func (cache *lruCache) GetItem(key Key) (interface{}, bool) {
+func (cache *lruCache) getItem(key Key) (interface{}, bool) {
 	if item, ok := cache.items[key]; ok {
 		cache.queue.MoveToFront(item)
 		return item.Value.(*cacheItem).value, true
@@ -77,7 +77,7 @@ func (cache *lruCache) GetItem(key Key) (interface{}, bool) {
 	return nil, false
 }
 
-func (cache *lruCache) ClearCache() {
+func (cache *lruCache) clearCache() {
 	cache.items = make(map[Key]*ListItem, cache.capacity)
 	cache.queue = NewList()
 }
