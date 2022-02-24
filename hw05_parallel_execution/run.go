@@ -12,7 +12,16 @@ type Task func() error
 type ErrorsLimit struct {
 	errorsCount    int
 	maxErrorsCount int
+	ignoreErrors   bool
 	mutext         sync.RWMutex
+}
+
+func NewErrorsLimit(maxErrorsCount int) *ErrorsLimit {
+	el := ErrorsLimit{maxErrorsCount: maxErrorsCount}
+	if maxErrorsCount <= 0 {
+		el.ignoreErrors = true
+	}
+	return &el
 }
 
 func (el *ErrorsLimit) IncrementErrorsCount() {
@@ -24,6 +33,9 @@ func (el *ErrorsLimit) IncrementErrorsCount() {
 func (el *ErrorsLimit) LimitExceeded() bool {
 	el.mutext.RLock()
 	defer el.mutext.RUnlock()
+	if el.ignoreErrors {
+		return false
+	}
 	return el.errorsCount >= el.maxErrorsCount
 }
 
@@ -35,7 +47,7 @@ func Run(tasks []Task, workersCount, maxErrorsCount int) error {
 	taskChannel := make(chan Task)
 	defer close(taskChannel)
 
-	el := ErrorsLimit{maxErrorsCount: maxErrorsCount}
+	el := NewErrorsLimit(maxErrorsCount)
 
 	wg.Add(workersCount)
 	consume := func() {
