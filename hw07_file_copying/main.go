@@ -18,5 +18,9 @@ func init() {
 
 func main() {
 	flag.Parse()
-	// Place your code here.
+	dd(from, to, limit, offset)
+}
+
+func dd(from, to string, limit, offset int64) {
+
 }
