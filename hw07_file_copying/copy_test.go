@@ -7,34 +7,44 @@ import (
 	"testing"
 )
 
-func cleanUp(t *testing.T, dirName string) {
-	if err := os.RemoveAll(dirName); err != nil {
-		t.Fatalf("Error while removing directory %v", dirName)
-	}
-}
-
 func TestCopy(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "TestCopy")
-	if err != nil {
-		t.Fatalf("Error while creating temporary directory")
+	testCase := []struct {
+		testName string
+		content  string
+		offset   int64
+		limit    int64
+		expected string
+	}{
+		{testName: "copy full file", content: "content", expected: "content"},
+		{testName: "copy empty file", content: "", expected: ""},
+		{testName: "copy from file middle", content: "content", offset: 3, expected: "tent"},
 	}
-	defer cleanUp(t, tempDir)
+	for _, tc := range testCase {
+		t.Run(tc.testName, func(t *testing.T) {
+			tempDir, err := os.MkdirTemp("", "TestCopy")
+			if err != nil {
+				t.Fatalf("Error while creating temporary directory")
+			}
 
-	fromFilePath := filepath.Join(tempDir, "from_file.txt")
-	toFilePath := filepath.Join(tempDir, "to_file.txt")
+			defer func() {
+				if err := os.RemoveAll(tempDir); err != nil {
+					t.Fatalf("Error while removing directory %v", tempDir)
+				}
+			}()
 
-	t.Run("copy full file", func(t *testing.T) {
-		content := []byte("content")
+			fromFilePath := filepath.Join(tempDir, "from_file.txt")
+			toFilePath := filepath.Join(tempDir, "to_file.txt")
 
-		err := os.WriteFile(fromFilePath, content, 777)
-		if err != nil {
-			t.Fatalf("Error while writing %v: %v\n", fromFilePath, err)
-		}
+			content := []byte(tc.content)
+			if err := os.WriteFile(fromFilePath, content, 777); err != nil {
+				t.Fatalf("Error while writing %v: %v\n", fromFilePath, err)
+			}
 
-		dd(fromFilePath, toFilePath, int64(0), int64(0))
+			dd(fromFilePath, toFilePath, tc.offset, tc.limit)
 
-		copiedContent, err := os.ReadFile(toFilePath)
-		require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
-		require.Equal(t, content, copiedContent, "contents should be equal")
-	})
+			copiedContent, err := os.ReadFile(toFilePath)
+			require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
+			require.Equal(t, tc.expected, string(copiedContent), "contents should be equal")
+		})
+	}
 }
