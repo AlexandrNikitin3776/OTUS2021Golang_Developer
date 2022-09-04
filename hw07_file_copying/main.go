@@ -1,11 +1,14 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"io"
 	"log"
 	"os"
 )
+
+const buffSize = 512
 
 var (
 	from, to      string
@@ -21,10 +24,10 @@ func init() {
 
 func main() {
 	flag.Parse()
-	dd(from, to, limit, offset)
+	copyFile(from, to, offset, limit)
 }
 
-func dd(from, to string, limit, offset int64) {
+func copyFile(from, to string, offset, limit int64) {
 	fromFile, err := os.Open(from)
 	if err != nil {
 		log.Fatalf("Error while opening %v: %v", from, err)
@@ -47,10 +50,47 @@ func dd(from, to string, limit, offset int64) {
 		}
 	}()
 
-	if written, err := io.Copy(toFile, fromFile); err != nil {
+	if err := copyReaderToWriter(fromFile, toFile, offset, limit); err != nil {
 		log.Fatalf("Error while copying from %v to %v: %v", from, to, err)
-	} else {
-		log.Printf("Copied %v bytes", written)
 	}
 
+}
+
+func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, limit int64) error {
+	isLimitSet := limit > 0
+	buffBlock := make([]byte, buffSize)
+
+	if seekedBytes, err := input.Seek(offset, io.SeekStart); err != nil {
+		return err
+	} else {
+		log.Printf("Seeked bytes %v", seekedBytes)
+	}
+
+	for (isLimitSet && limit > 0) || !isLimitSet {
+		log.Printf("New reading cycle: offset %v, limit %v\n", offset, limit)
+		readBytes, err := input.Read(buffBlock)
+		if errors.Is(err, io.EOF) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		log.Printf("Read buffer %v bytes %v\n", string(buffBlock[:readBytes]), readBytes)
+
+		bytesToWrite := int64(readBytes)
+		if isLimitSet && limit < bytesToWrite {
+			bytesToWrite = limit
+		}
+
+		wroteBytes, err := output.Write(buffBlock[:bytesToWrite])
+		if err != nil {
+			return err
+		}
+		log.Printf("Wrote bytes %v\n", wroteBytes)
+
+		if isLimitSet {
+			limit -= int64(wroteBytes)
+		}
+	}
+	return nil
 }
