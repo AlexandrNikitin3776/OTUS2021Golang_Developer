@@ -58,6 +58,7 @@ func copyFile(from, to string, offset, limit int64) {
 
 func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, limit int64) error {
 	isLimitSet := limit > 0
+	var totalBytesCopied int64
 	buffBlock := make([]byte, buffSize)
 
 	if seekedBytes, err := input.Seek(offset, io.SeekStart); err != nil {
@@ -66,7 +67,7 @@ func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, lim
 		log.Printf("Seeked bytes %v", seekedBytes)
 	}
 
-	for (isLimitSet && limit > 0) || !isLimitSet {
+	for (isLimitSet && totalBytesCopied < limit) || !isLimitSet {
 		log.Printf("New reading cycle: offset %v, limit %v\n", offset, limit)
 		readBytes, err := input.Read(buffBlock)
 		if errors.Is(err, io.EOF) {
@@ -75,22 +76,20 @@ func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, lim
 			return err
 		}
 
-		log.Printf("Read buffer %v bytes %v\n", string(buffBlock[:readBytes]), readBytes)
+		log.Printf("Read bytes %v\n", readBytes)
 
 		bytesToWrite := int64(readBytes)
-		if isLimitSet && limit < bytesToWrite {
-			bytesToWrite = limit
+		if bytesRemain := limit - totalBytesCopied; isLimitSet && bytesRemain < bytesToWrite {
+			bytesToWrite = bytesRemain
 		}
 
 		wroteBytes, err := output.Write(buffBlock[:bytesToWrite])
 		if err != nil {
 			return err
 		}
-		log.Printf("Wrote bytes %v\n", wroteBytes)
+		totalBytesCopied += int64(wroteBytes)
+		log.Printf("Wrote bytes %v. Total: %v\n", wroteBytes, totalBytesCopied)
 
-		if isLimitSet {
-			limit -= int64(wroteBytes)
-		}
 	}
 	return nil
 }
