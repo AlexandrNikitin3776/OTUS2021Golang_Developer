@@ -42,7 +42,8 @@ func TestCopy(t *testing.T) {
 			expectedFilePath := filepath.Join(testDataDir, tc.expectedContentFile)
 			toFilePath := filepath.Join(tempDir, "to_file.txt")
 
-			copyFile(fromFilePath, toFilePath, tc.offset, tc.limit)
+			copyErr := Copy(fromFilePath, toFilePath, tc.offset, tc.limit)
+			require.NoError(t, copyErr, "there shouldn't be an error")
 
 			copiedContent, err := os.ReadFile(toFilePath)
 			require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
@@ -72,11 +73,14 @@ func TestExistedToFile(t *testing.T) {
 	expectedFilePath := filepath.Join(testDataDir, "out_offset0_limit10.txt")
 	toFilePath := filepath.Join(tempDir, "to_file.txt")
 
-	copyFile(fromFilePath, toFilePath, 0, 0)
-	copyFile(fromFilePath, toFilePath, 0, 10)
+	copyErr := Copy(fromFilePath, toFilePath, 0, 0)
+	require.NoError(t, copyErr, "there shouldn't be an error")
+
+	copyErr = Copy(fromFilePath, toFilePath, 0, 10)
+	require.NoError(t, copyErr, "there shouldn't be an error")
 
 	copiedContent, err := os.ReadFile(toFilePath)
-	require.NoError(t, err, "there shouldn't be an error")
+	require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
 
 	expectedContent, err := os.ReadFile(expectedFilePath)
 	if err != nil {
