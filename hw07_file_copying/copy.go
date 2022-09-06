@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
@@ -16,9 +15,19 @@ var (
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (err error) {
+	fromFileStat, err := os.Stat(fromPath)
+	if err != nil {
+		return fmt.Errorf("error while getting file stat %v: %v", fromPath, err)
+	}
+
+	fromFileSize := fromFileStat.Size()
+	if offset > fromFileSize {
+		return ErrOffsetExceedsFileSize
+	}
+
 	fromFile, err := os.Open(fromPath)
 	if err != nil {
-		return fmt.Errorf("error while opening %v: %v", fromPath, err)
+		return fmt.Errorf("error while opening file %v: %v %T", fromPath, err, err)
 	}
 
 	defer func() {
@@ -42,7 +51,18 @@ func Copy(fromPath, toPath string, offset, limit int64) (err error) {
 		}
 	}()
 
-	if err := copyReaderToWriter(fromFile, toFile, offset, limit); err != nil {
+	var bytesToRead int64
+	if limit > 0 {
+		bytesToRead = Min(fromFileSize, limit)
+	} else {
+		bytesToRead = fromFileSize
+	}
+
+	pb := NewProgressBar(bytesToRead)
+
+	fileWriterWithProgress := io.MultiWriter(toFile, pb)
+
+	if err := copyReaderToWriter(fromFile, fileWriterWithProgress, offset, limit); err != nil {
 		return fmt.Errorf("error while copying from %v to %v: %v", fromPath, toPath, err)
 	}
 
@@ -54,22 +74,18 @@ func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, lim
 	var totalBytesCopied int64
 	buffBlock := make([]byte, buffSize)
 
-	if seekedBytes, err := input.Seek(offset, io.SeekStart); err != nil {
+	if _, err := input.Seek(offset, io.SeekStart); err != nil {
 		return fmt.Errorf("error while seeking file %v", err)
 	} else {
-		log.Printf("Seeked bytes %v", seekedBytes)
 	}
 
 	for (isLimitSet && totalBytesCopied < limit) || !isLimitSet {
-		log.Printf("New reading cycle: offset %v, limit %v\n", offset, limit)
 		readBytes, err := input.Read(buffBlock)
 		if errors.Is(err, io.EOF) {
 			return nil
 		} else if err != nil {
 			return fmt.Errorf("error while reading bytes %v", err)
 		}
-
-		log.Printf("Read bytes %v\n", readBytes)
 
 		bytesToWrite := int64(readBytes)
 		if bytesRemain := limit - totalBytesCopied; isLimitSet && bytesRemain < bytesToWrite {
@@ -81,9 +97,6 @@ func copyReaderToWriter(input io.ReadSeeker, output io.Writer, offset int64, lim
 			return fmt.Errorf("error while writing bytes %v", err)
 		}
 		totalBytesCopied += int64(wroteBytes)
-
-		log.Printf("Wrote bytes %v. Total: %v\n", wroteBytes, totalBytesCopied)
-
 	}
 	return nil
 }
