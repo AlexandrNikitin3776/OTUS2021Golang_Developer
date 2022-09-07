@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"github.com/stretchr/testify/require"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -57,7 +58,7 @@ func TestCopy(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			tempDir, err := os.MkdirTemp("", "TestCopy")
 			if err != nil {
-				t.Fatalf("Error while creating temporary directory")
+				t.Fatal("Error while creating temporary directory")
 			}
 
 			defer func() {
@@ -74,7 +75,7 @@ func TestCopy(t *testing.T) {
 			require.NoError(t, copyErr, "there shouldn't be an error")
 
 			copiedContent, err := os.ReadFile(toFilePath)
-			require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
+			require.NotErrorIs(t, err, fs.ErrNotExist, "target file must exist")
 
 			expectedContent, err := os.ReadFile(expectedFilePath)
 			if err != nil {
@@ -88,7 +89,7 @@ func TestCopy(t *testing.T) {
 func TestExistedToFile(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "TestExistedToFile")
 	if err != nil {
-		t.Fatalf("Error while creating temporary directory")
+		t.Fatal("Error while creating temporary directory")
 	}
 
 	defer func() {
@@ -108,7 +109,7 @@ func TestExistedToFile(t *testing.T) {
 	require.NoError(t, copyErr, "there shouldn't be an error")
 
 	copiedContent, err := os.ReadFile(toFilePath)
-	require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
+	require.NotErrorIs(t, err, fs.ErrNotExist, "target file must exist")
 
 	expectedContent, err := os.ReadFile(expectedFilePath)
 	if err != nil {
@@ -121,7 +122,7 @@ func TestCopyDevRandom(t *testing.T) {
 	var bytesToRead int64 = 1000
 	tempDir, err := os.MkdirTemp("", "TestCopyDevRandom")
 	if err != nil {
-		t.Fatalf("Error while creating temporary directory")
+		t.Fatal("Error while creating temporary directory")
 	}
 
 	defer func() {
@@ -133,19 +134,19 @@ func TestCopyDevRandom(t *testing.T) {
 	fromFilePath := "/dev/urandom"
 	toFilePath := filepath.Join(tempDir, "to_file.txt")
 
-	copyErr := Copy(fromFilePath, toFilePath, 10, bytesToRead)
+	copyErr := Copy(fromFilePath, toFilePath, 0, bytesToRead)
 	require.NoError(t, copyErr, "there shouldn't be an error")
 
 	copiedContent, err := os.ReadFile(toFilePath)
-	require.NotErrorIs(t, err, os.ErrNotExist, "target file must exist")
-	require.Equal(t, len(copiedContent), bytesToRead)
+	require.NotErrorIs(t, err, fs.ErrNotExist, "target file must exist")
+	require.Equal(t, int64(len(copiedContent)), bytesToRead)
 }
 
 func TestOffsetExceedsFileSizeFail(t *testing.T) {
 	content := "some content"
 	tempDir, err := os.MkdirTemp("", "TestOffsetExceedsFileSizeFail")
 	if err != nil {
-		t.Fatalf("Error while creating temporary directory")
+		t.Fatal("Error while creating temporary directory")
 	}
 
 	defer func() {
@@ -166,13 +167,13 @@ func TestOffsetExceedsFileSizeFail(t *testing.T) {
 	require.ErrorIs(t, copyErr, ErrOffsetExceedsFileSize, "offset larger than file size is invalid")
 
 	_, err = os.ReadFile(toFilePath)
-	require.ErrorIs(t, err, os.ErrNotExist, "target file should not exist")
+	require.ErrorIs(t, err, fs.ErrNotExist, "target file should not exist")
 }
 
 func TestFromFileNotExist(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "TestFromFileNotExist")
 	if err != nil {
-		t.Fatalf("Error while creating temporary directory")
+		t.Fatal("Error while creating temporary directory")
 	}
 
 	defer func() {
@@ -185,9 +186,8 @@ func TestFromFileNotExist(t *testing.T) {
 	toFilePath := filepath.Join(tempDir, "to_file.txt")
 
 	copyErr := Copy(fromFilePath, toFilePath, math.MaxInt64, 0)
-	t.Logf("%#v", copyErr)
-	require.ErrorIs(t, err, os.ErrNotExist, "from file doesn't exist")
+	require.ErrorIs(t, copyErr, fs.ErrNotExist, "from file doesn't exist")
 
 	_, err = os.ReadFile(toFilePath)
-	require.ErrorIs(t, err, os.ErrNotExist, "target file should not exist")
+	require.ErrorIs(t, err, fs.ErrNotExist, "target file should not exist")
 }
