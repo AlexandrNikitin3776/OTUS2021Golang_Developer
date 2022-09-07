@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -19,8 +20,17 @@ type ProgressBar struct {
 	totalBytes int64
 }
 
-func NewProgressBar(totalBytes int64) *ProgressBar {
-	return &ProgressBar{totalBytes: totalBytes}
+func NewProgressBar(offset, limit, fileSize int64) *ProgressBar {
+	isLimitSet := limit > 0
+	isUndefinedSize := fileSize == 0
+
+	if isUndefinedSize {
+		return &ProgressBar{totalBytes: limit}
+	}
+	if isLimitSet {
+		return &ProgressBar{totalBytes: Min(limit, fileSize-offset)}
+	}
+	return &ProgressBar{totalBytes: fileSize}
 }
 
 func (pb *ProgressBar) Write(input []byte) (int, error) {

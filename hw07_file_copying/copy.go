@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 )
@@ -14,6 +13,7 @@ var (
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
 
+// Для файлов, у которых не определена длина, offset указывать равным нулю
 func Copy(fromPath, toPath string, offset, limit int64) (err error) {
 	fromFileStat, err := os.Stat(fromPath)
 	if err != nil {
@@ -24,6 +24,8 @@ func Copy(fromPath, toPath string, offset, limit int64) (err error) {
 	if offset > fromFileSize {
 		return ErrOffsetExceedsFileSize
 	}
+
+	pb := NewProgressBar(offset, limit, fromFileSize)
 
 	fromFile, err := os.Open(fromPath)
 	if err != nil {
@@ -51,14 +53,7 @@ func Copy(fromPath, toPath string, offset, limit int64) (err error) {
 		}
 	}()
 
-	var bytesToRead int64
-	if limit > 0 {
-		bytesToRead = Min(fromFileSize, limit)
-	} else {
-		bytesToRead = fromFileSize
-	}
-
-	pb := NewProgressBar(bytesToRead)
+	fileWriterWithProgressBar := io.MultiWriter(toFile, pb)
 
 	if err := copyReaderToWriter(fromFile, fileWriterWithProgressBar, offset, limit); err != nil {
 		return err
