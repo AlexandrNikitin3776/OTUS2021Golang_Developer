@@ -12,6 +12,8 @@ const (
 	progressLen  = 80
 )
 
+var OverflowError = errors.New("progress bar is full, can't write more bytes")
+
 type ProgressBar struct {
 	bytesWrote int64
 	totalBytes int64
@@ -23,7 +25,7 @@ func NewProgressBar(totalBytes int64) *ProgressBar {
 
 func (pb *ProgressBar) Write(input []byte) (int, error) {
 	if pb.bytesWrote >= pb.totalBytes {
-		return 0, fmt.Errorf("progress bar is full, can't write more bytes")
+		return 0, OverflowError
 	}
 	pb.bytesWrote += int64(len(input))
 	percents := float64(pb.bytesWrote) / float64(pb.totalBytes) * 100
