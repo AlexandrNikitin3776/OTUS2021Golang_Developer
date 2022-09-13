@@ -21,16 +21,20 @@ type ProgressBar struct {
 }
 
 func NewProgressBar(offset, limit, fileSize int64) *ProgressBar {
+	return &ProgressBar{totalBytes: defineProgressBarSize(offset, limit, fileSize)}
+}
+
+func defineProgressBarSize(offset, limit, fileSize int64) int64 {
 	isLimitSet := limit > 0
 	isUndefinedSize := fileSize == 0
 
 	if isUndefinedSize {
-		return &ProgressBar{totalBytes: limit}
+		return limit
 	}
 	if isLimitSet {
-		return &ProgressBar{totalBytes: Min(limit, fileSize-offset)}
+		return Min(limit, fileSize-offset)
 	}
-	return &ProgressBar{totalBytes: fileSize}
+	return fileSize
 }
 
 func (pb *ProgressBar) Write(input []byte) (int, error) {
