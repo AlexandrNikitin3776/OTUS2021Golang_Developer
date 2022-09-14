@@ -7,15 +7,17 @@ import (
 )
 
 func TestParseCLIArgsOK(t *testing.T) {
-	expected := CLIArgs{"dir", "command", []string{"arg1", "arg2"}}
-	os.Args = []string{"test", "dir", "command", "arg1", "arg2"}
-	result, err := ParseCLIArgs()
+	expectedDir := "dir"
+	expectedCmd := []string{"command", "arg1", "arg2"}
+	os.Args = append([]string{"test", expectedDir}, expectedCmd...)
+	dir, cmd, err := ParseCLIArgs()
 	require.NoError(t, err, "shouldn't be any error")
-	require.Equal(t, expected, *result)
+	require.Equal(t, expectedDir, dir)
+	require.Equal(t, expectedCmd, cmd)
 }
 
 func TestParseCLIArgsFail(t *testing.T) {
 	os.Args = []string{"test", "dir"}
-	_, err := ParseCLIArgs()
+	_, _, err := ParseCLIArgs()
 	require.Error(t, err, "should be an error")
 }

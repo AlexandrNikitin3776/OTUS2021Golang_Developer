@@ -6,26 +6,17 @@ import (
 )
 
 type ErrInvalidUsage struct {
-	app string
+	appName string
 }
 
 func (e *ErrInvalidUsage) Error() string {
-	return fmt.Sprintf("usage of %v is : '%v dir command [args]'", e.app, e.app)
+	return fmt.Sprintf("usage of %v is : '%v dir command [args]'", e.appName, e.appName)
 }
 
-type CLIArgs struct {
-	dir     string
-	command string
-	args    []string
-}
-
-func ParseCLIArgs() (*CLIArgs, error) {
+func ParseCLIArgs() (string, []string, error) {
 	if len(os.Args) < 3 {
-		return nil, &ErrInvalidUsage{os.Args[0]}
+		return "", nil, &ErrInvalidUsage{os.Args[0]}
 	}
-	args := make([]string, 0)
-	if len(os.Args) > 3 {
-		args = os.Args[3:len(os.Args)]
-	}
-	return &CLIArgs{os.Args[1], os.Args[2], args}, nil
+	args := os.Args[2:len(os.Args)]
+	return os.Args[1], args, nil
 }
