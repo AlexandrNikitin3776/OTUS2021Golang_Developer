@@ -23,11 +23,11 @@ func TestRunCmd(t *testing.T) {
 			0,
 		},
 		{
-			"return 1",
+			"return 56",
 			args{
-				[]string{"ls", "/unexisted/dir"},
+				[]string{"sh", "-c", "exit 56"},
 				Environment{}},
-			1,
+			56,
 		},
 	}
 	for _, tt := range tests {
@@ -85,7 +85,7 @@ func TestSetEnvs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := setEnvs(tt.args.commandEnv, tt.args.targetEnvironment)
-			require.Equal(t, tt.want, got, "values must be equal")
+			require.ElementsMatch(t, tt.want, got, "values must be equal")
 		})
 	}
 }
