@@ -47,6 +47,11 @@ func TestReadDir(t *testing.T) {
 			[]EnvFile{{"FOO", "19\x0042"}},
 			Environment{"FOO": EnvValue{"19\n42", false}},
 		},
+		{
+			"ignore second line",
+			[]EnvFile{{"FOO", "19\n25"}},
+			Environment{"FOO": EnvValue{"19", false}},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -90,9 +95,8 @@ func TestIsValidFileName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isValidFileName(tt.fileName); got != tt.want {
-				t.Errorf("isValidFileName() = %v, want %v", got, tt.want)
-			}
+			got := isValidFileName(tt.fileName)
+			require.Equal(t, tt.want, got, "values must be equal")
 		})
 	}
 }
@@ -108,9 +112,36 @@ func TestIsFileEmpty(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isFileEmpty(tt.content); got != tt.want {
-				t.Errorf("isFileEmpty() = %v, want %v", got, tt.want)
-			}
+			got := isFileEmpty(tt.content)
+			require.Equal(t, tt.want, got, "values must be equal")
+		})
+	}
+}
+
+func TestFromStrings(t *testing.T) {
+	tests := []struct {
+		name string
+		env  []string
+		want Environment
+	}{
+		{
+			"empty",
+			make([]string, 0),
+			make(Environment, 0),
+		},
+		{
+			"two envs",
+			[]string{"a=12", "b=15"},
+			Environment{
+				"a": {"12", false},
+				"b": {"15", false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := fromStrings(tt.env)
+			require.Equal(t, tt.want, got, "values must be equal")
 		})
 	}
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -12,6 +15,35 @@ type Environment map[string]EnvValue
 type EnvValue struct {
 	Value      string
 	NeedRemove bool
+}
+
+var splitRegex = regexp.MustCompile(`=`)
+
+func fromStrings(env []string) Environment {
+	environment := make(Environment, len(env))
+	for _, envString := range env {
+		keyValue := splitRegex.Split(envString, 2)
+		environment[keyValue[0]] = EnvValue{Value: keyValue[1], NeedRemove: false}
+	}
+	return environment
+}
+
+func (e Environment) toStrings() []string {
+	result := make([]string, 0)
+	for envName, envValue := range e {
+		result = append(result, fmt.Sprintf("%v=%v", envName, envValue.Value))
+	}
+	return result
+}
+
+func (e Environment) update(target Environment) {
+	for envName, envValue := range target {
+		if envValue.NeedRemove {
+			delete(e, envName)
+		} else {
+			e[envName] = envValue
+		}
+	}
 }
 
 // ReadDir reads a specified directory and returns map of env variables.
@@ -29,7 +61,7 @@ func ReadDir(dir string) (Environment, error) {
 		}
 
 		filePath := filepath.Join(dir, file.Name())
-		content, err := readFileString(filePath)
+		content, err := readFirstLine(filePath)
 		if err != nil {
 			return nil, err
 		}
@@ -55,12 +87,16 @@ func isValidFileName(fileName string) bool {
 	return true
 }
 
-func readFileString(path string) (string, error) {
-	content, err := os.ReadFile(path)
+func readFirstLine(path string) (string, error) {
+	readFile, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
-	return string(content), nil
+	scanner := bufio.NewScanner(readFile)
+	if ok := scanner.Scan(); ok {
+		return scanner.Text(), nil
+	}
+	return "", nil
 }
 
 func isFileEmpty(content string) bool {
