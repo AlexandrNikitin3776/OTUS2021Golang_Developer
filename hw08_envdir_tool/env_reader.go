@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -17,12 +16,10 @@ type EnvValue struct {
 	NeedRemove bool
 }
 
-var splitRegex = regexp.MustCompile(`=`)
-
 func fromStrings(env []string) Environment {
 	environment := make(Environment, len(env))
 	for _, envString := range env {
-		keyValue := splitRegex.Split(envString, 2)
+		keyValue := strings.Split(envString, `=`)
 		environment[keyValue[0]] = EnvValue{Value: keyValue[1], NeedRemove: false}
 	}
 	return environment
