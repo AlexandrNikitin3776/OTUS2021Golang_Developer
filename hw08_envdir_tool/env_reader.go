@@ -93,6 +93,9 @@ func readFirstLine(path string) (string, error) {
 	if ok := scanner.Scan(); ok {
 		return scanner.Text(), nil
 	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
 	return "", nil
 }
 
