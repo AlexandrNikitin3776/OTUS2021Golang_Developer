@@ -2,15 +2,15 @@ package hw09structvalidator
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 var (
-	InvalidIntRule = errors.New("int tag has invalid value")
-	InvalidIntMin  = errors.New("int value is lower than min value")
-	InvalidIntMax  = errors.New("int value is greater than min value")
-	InvalidIntIn   = errors.New("int value is not in the values list")
+	InvalidIntMin = errors.New("int value is lower than min value")
+	InvalidIntMax = errors.New("int value is greater than min value")
+	InvalidIntIn  = errors.New("int value is not in the values list")
 )
 
 type IntRule = func(int) error
@@ -22,18 +22,18 @@ type intRule struct {
 func ParseIntRule(rule string) (IntRule, error) {
 	funcName, controlValue, found := strings.Cut(rule, ":")
 	if !found {
-		return nil, InvalidIntRule
+		return nil, fmt.Errorf("tag must contain %v", tagDefinder)
 	}
 
 	ir := intRule{}
 	ruleGetter, found := ir.getRuleGetter(funcName)
 	if !found {
-		return nil, InvalidIntRule
+		return nil, fmt.Errorf("tag rule %q isn't supported", funcName)
 	}
 
 	checkFunc, err := ruleGetter(controlValue)
 	if err != nil {
-		return nil, InvalidIntRule
+		return nil, fmt.Errorf("erorr while getting rule: %w", err)
 	}
 	return checkFunc, nil
 }
@@ -54,7 +54,7 @@ func (ir intRule) getRuleGetter(funcName string) (IntRuleGetter, bool) {
 func (ir intRule) getMinRule(controlValue string) (IntRule, error) {
 	controlMin, err := strconv.Atoi(controlValue)
 	if err != nil {
-		return nil, InvalidIntRule
+		return nil, err
 	}
 
 	return func(value int) error {
@@ -68,7 +68,7 @@ func (ir intRule) getMinRule(controlValue string) (IntRule, error) {
 func (ir intRule) getMaxRule(controlValue string) (IntRule, error) {
 	controlMax, err := strconv.Atoi(controlValue)
 	if err != nil {
-		return nil, InvalidIntRule
+		return nil, err
 	}
 
 	return func(value int) error {
@@ -79,26 +79,28 @@ func (ir intRule) getMaxRule(controlValue string) (IntRule, error) {
 	}, nil
 }
 
+func intSetFromSlice(sl []string) (map[int]struct{}, error) {
+	result := make(map[int]struct{}, len(sl))
+	for _, value := range sl {
+		if intValue, err := strconv.Atoi(value); err != nil {
+			return nil, err
+		} else {
+			result[intValue] = struct{}{}
+		}
+	}
+	return result, nil
+}
+
 func (ir intRule) getInRule(controlValue string) (IntRule, error) {
-	var err error
-	listValues := strings.Split(controlValue, ",")
-	values := make([]int, len(listValues))
-	for i := range listValues {
-		if listValues[i] == "" {
-			return nil, InvalidIntRule
-		}
-		values[i], err = strconv.Atoi(listValues[i])
-		if err != nil {
-			return nil, InvalidIntRule
-		}
+	controlValues, err := intSetFromSlice(strings.Split(controlValue, ","))
+	if err != nil {
+		return nil, err
 	}
 
 	return func(value int) error {
-		for _, targetValue := range values {
-			if value == targetValue {
-				return nil
-			}
+		if _, ok := controlValues[value]; !ok {
+			return InvalidIntIn
 		}
-		return InvalidIntIn
+		return nil
 	}, nil
 }

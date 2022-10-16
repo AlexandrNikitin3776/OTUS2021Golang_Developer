@@ -22,7 +22,7 @@ func TestParseIntRule(t *testing.T) {
 			got, err := ParseIntRule(tt.rule)
 
 			if tt.wantErr {
-				require.ErrorIs(t, err, InvalidIntRule)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
@@ -48,7 +48,7 @@ func TestIntMinRule(t *testing.T) {
 			got, err := ir.getMinRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.ErrorIs(t, err, InvalidIntRule)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
@@ -76,7 +76,7 @@ func TestIntMaxRule(t *testing.T) {
 			got, err := ir.getMaxRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.ErrorIs(t, err, InvalidIntRule)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
@@ -107,7 +107,7 @@ func TestIntInRule(t *testing.T) {
 			got, err := ir.getInRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.ErrorIs(t, err, InvalidIntRule)
+				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
