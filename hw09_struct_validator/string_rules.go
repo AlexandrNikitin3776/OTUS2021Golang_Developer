@@ -20,6 +20,19 @@ type StringRuleGetter = func(string) (StringRule, error)
 type stringRule struct {
 }
 
+func ParseStringRules(tag string) ([]StringRule, error) {
+	rules := strings.Split(tag, tagDivider)
+	result := make([]StringRule, len(rules))
+	for _, rule := range rules {
+		if checkFunc, err := ParseStringRule(rule); err != nil {
+			return nil, err
+		} else {
+			result = append(result, checkFunc)
+		}
+	}
+	return result, nil
+}
+
 func ParseStringRule(rule string) (StringRule, error) {
 	funcName, controlValue, found := strings.Cut(rule, ":")
 	if !found {

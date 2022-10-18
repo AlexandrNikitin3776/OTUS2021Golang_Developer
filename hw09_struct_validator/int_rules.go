@@ -19,6 +19,19 @@ type IntRuleGetter = func(string) (IntRule, error)
 type intRule struct {
 }
 
+func ParseIntRules(tag string) ([]IntRule, error) {
+	rules := strings.Split(tag, tagDivider)
+	result := make([]IntRule, len(rules))
+	for _, rule := range rules {
+		if checkFunc, err := ParseIntRule(rule); err != nil {
+			return nil, err
+		} else {
+			result = append(result, checkFunc)
+		}
+	}
+	return result, nil
+}
+
 func ParseIntRule(rule string) (IntRule, error) {
 	funcName, controlValue, found := strings.Cut(rule, ":")
 	if !found {
