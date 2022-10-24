@@ -35,8 +35,8 @@ func TestIntMinRule(t *testing.T) {
 	tests := []struct {
 		name           string
 		controlValue   string
-		checkValueOk   int
-		checkValueFail int
+		checkValueOk   int64
+		checkValueFail int64
 		wantErr        bool
 	}{
 		{"ok", "2", 2, 1, false},
@@ -63,8 +63,8 @@ func TestIntMaxRule(t *testing.T) {
 	tests := []struct {
 		name           string
 		controlValue   string
-		checkValueOk   int
-		checkValueFail int
+		checkValueOk   int64
+		checkValueFail int64
 		wantErr        bool
 	}{
 		{"ok", "2", 2, 3, false},
@@ -92,8 +92,8 @@ func TestIntInRule(t *testing.T) {
 	tests := []struct {
 		name           string
 		controlValue   string
-		checkValueOk   int
-		checkValueFail int
+		checkValueOk   int64
+		checkValueFail int64
 		wantErr        bool
 	}{
 		{"ok", "10,12", 10, 11, false},

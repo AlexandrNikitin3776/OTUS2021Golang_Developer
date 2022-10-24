@@ -13,7 +13,7 @@ var (
 	InvalidIntIn  = errors.New("int value is not in the values list")
 )
 
-type IntRule = func(int) error
+type IntRule = func(int64) error
 type IntRuleGetter = func(string) (IntRule, error)
 
 type intRule struct {
@@ -21,7 +21,7 @@ type intRule struct {
 
 func ParseIntRules(tag string) ([]IntRule, error) {
 	rules := strings.Split(tag, tagDivider)
-	result := make([]IntRule, len(rules))
+	result := make([]IntRule, 0)
 	for _, rule := range rules {
 		if checkFunc, err := ParseIntRule(rule); err != nil {
 			return nil, err
@@ -70,8 +70,8 @@ func (ir intRule) getMinRule(controlValue string) (IntRule, error) {
 		return nil, err
 	}
 
-	return func(value int) error {
-		if value < controlMin {
+	return func(value int64) error {
+		if value < int64(controlMin) {
 			return InvalidIntMin
 		}
 		return nil
@@ -84,21 +84,21 @@ func (ir intRule) getMaxRule(controlValue string) (IntRule, error) {
 		return nil, err
 	}
 
-	return func(value int) error {
-		if value > controlMax {
+	return func(value int64) error {
+		if value > int64(controlMax) {
 			return InvalidIntMax
 		}
 		return nil
 	}, nil
 }
 
-func intSetFromSlice(sl []string) (map[int]struct{}, error) {
-	result := make(map[int]struct{}, len(sl))
+func intSetFromSlice(sl []string) (map[int64]struct{}, error) {
+	result := make(map[int64]struct{}, len(sl))
 	for _, value := range sl {
 		if intValue, err := strconv.Atoi(value); err != nil {
 			return nil, err
 		} else {
-			result[intValue] = struct{}{}
+			result[int64(intValue)] = struct{}{}
 		}
 	}
 	return result, nil
@@ -110,7 +110,7 @@ func (ir intRule) getInRule(controlValue string) (IntRule, error) {
 		return nil, err
 	}
 
-	return func(value int) error {
+	return func(value int64) error {
 		if _, ok := controlValues[value]; !ok {
 			return InvalidIntIn
 		}

@@ -22,7 +22,7 @@ type stringRule struct {
 
 func ParseStringRules(tag string) ([]StringRule, error) {
 	rules := strings.Split(tag, tagDivider)
-	result := make([]StringRule, len(rules))
+	result := make([]StringRule, 0)
 	for _, rule := range rules {
 		if checkFunc, err := ParseStringRule(rule); err != nil {
 			return nil, err
