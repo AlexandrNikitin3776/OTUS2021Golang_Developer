@@ -63,7 +63,6 @@ func ParseRules(t reflect.Type) (Validator, error) {
 	var err error
 
 	for _, field := range reflect.VisibleFields(t) {
-		fmt.Println(field.Name, field.Type, field.Tag)
 		fieldTag, found := field.Tag.Lookup(validationTag)
 		if !found {
 			continue
@@ -94,13 +93,7 @@ func (v *Validator) Validate(value reflect.Value) error {
 	v.errors = make(ValidationErrors, 0)
 	for fieldName, rule := range v.intRules {
 		field := value.FieldByName(fieldName)
-		//if value.Kind() == reflect.Slice {
-		//	for _, element := range field.F {
-		//
-		//	}
-		//} else {
 		v.checkIntField(fieldName, field, rule)
-		//}
 	}
 	for fieldName, rule := range v.stringRules {
 		field := value.FieldByName(fieldName)
