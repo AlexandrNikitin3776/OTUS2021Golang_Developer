@@ -2,6 +2,7 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -36,17 +37,18 @@ type (
 	}
 )
 
+func TestValidateUnsupportedType(t *testing.T) {
+	expectedErr := UnsupportedInputType
+	err := Validate(42)
+	require.Equal(t, expectedErr, err, "errors should be equal")
+}
+
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		name        string
 		in          interface{}
 		expectedErr error
 	}{
-		{
-			"unsupported type",
-			42,
-			UnsupportedInputType,
-		},
 		{
 			"validate user ok",
 			User{"012345678901234567890123456789012345", "user", 25, "example@otus.ru", "admin", []string{"01234567890"}, []byte("json")},
@@ -64,18 +66,28 @@ func TestValidate(t *testing.T) {
 			},
 		},
 		{
-			"validate app",
+			"validate app ok",
+			App{"01234"},
+			ValidationErrors{},
+		},
+		{
+			"validate app fail",
 			App{"0"},
 			ValidationErrors{
 				{"Version", InvalidStringLen},
 			},
 		},
-		{"validate token",
+		{"validate token ok",
 			Token{[]byte("header"), []byte("payload"), []byte("signature")},
 			ValidationErrors{},
 		},
 		{
-			"validate response",
+			"validate response ok",
+			Response{200, "322"},
+			ValidationErrors{},
+		},
+		{
+			"validate response fail",
 			Response{155, "322"},
 			ValidationErrors{
 				{"Code", InvalidIntIn},
@@ -89,7 +101,7 @@ func TestValidate(t *testing.T) {
 			t.Parallel()
 			err := Validate(tt.in)
 			require.ElementsMatch(t, tt.expectedErr, err, "errors should be equal")
-			_ = tt
+			fmt.Println(err)
 		})
 	}
 }
