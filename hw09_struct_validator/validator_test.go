@@ -2,7 +2,6 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -34,6 +33,11 @@ type (
 	Response struct {
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
+	}
+
+	Request struct {
+		Id   int `validate:"min:5"`
+		Apps []App
 	}
 )
 
@@ -93,6 +97,19 @@ func TestValidate(t *testing.T) {
 				{"Code", InvalidIntIn},
 			},
 		},
+		{
+			"validate request ok",
+			Request{12345, []App{{"0.0.1"}}},
+			ValidationErrors{},
+		},
+		{
+			"validate request fail",
+			Request{12345, []App{{"0.0.1"}, {"0.1"}}},
+			ValidationErrors{
+				{"Apps", ValidationErrors{
+					{"Version", InvalidStringLen},
+				}}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -101,7 +118,6 @@ func TestValidate(t *testing.T) {
 			t.Parallel()
 			err := Validate(tt.in)
 			require.ElementsMatch(t, tt.expectedErr, err, "errors should be equal")
-			fmt.Println(err)
 		})
 	}
 }

@@ -49,15 +49,17 @@ func Validate(v interface{}) error {
 }
 
 type Validator struct {
-	errors      ValidationErrors
-	intRules    map[string][]IntRule
-	stringRules map[string][]StringRule
-	isSlice     map[string]bool
+	errors           ValidationErrors
+	structValidators map[string]Validator
+	intRules         map[string][]IntRule
+	stringRules      map[string][]StringRule
+	isSlice          map[string]bool
 }
 
 func ParseRules(t reflect.Type) (Validator, error) {
 	var validator = Validator{
 		make(ValidationErrors, 0),
+		make(map[string]Validator, 0),
 		make(map[string][]IntRule, 0),
 		make(map[string][]StringRule, 0),
 		make(map[string]bool, 0),
@@ -66,9 +68,6 @@ func ParseRules(t reflect.Type) (Validator, error) {
 
 	for _, field := range reflect.VisibleFields(t) {
 		fieldTag, found := field.Tag.Lookup(validationTag)
-		if !found {
-			continue
-		}
 
 		kind := field.Type.Kind()
 		validator.isSlice[field.Name] = false
@@ -77,7 +76,17 @@ func ParseRules(t reflect.Type) (Validator, error) {
 			validator.isSlice[field.Name] = true
 		}
 
+		if !found && kind != reflect.Struct {
+			continue
+		}
+
 		switch kind {
+		case reflect.Struct:
+			if validator.isSlice[field.Name] {
+				validator.structValidators[field.Name], err = ParseRules(field.Type.Elem())
+			} else {
+				validator.structValidators[field.Name], err = ParseRules(field.Type)
+			}
 		case reflect.Int:
 			validator.intRules[field.Name], err = ParseIntRules(fieldTag)
 		case reflect.String:
@@ -95,9 +104,23 @@ func ParseRules(t reflect.Type) (Validator, error) {
 
 func (v *Validator) Validate(value reflect.Value) error {
 	v.errors = make(ValidationErrors, 0)
+	v.validateStructFields(value)
 	v.validateIntFields(value)
 	v.validateStringFields(value)
 	return v.errors
+}
+
+func (v *Validator) validateStructFields(value reflect.Value) {
+	for fieldName, validator := range v.structValidators {
+		field := value.FieldByName(fieldName)
+		if v.isSlice[fieldName] {
+			for elemIndex := 0; elemIndex < field.Len(); elemIndex++ {
+				v.checkStructField(fieldName, field.Index(elemIndex), validator)
+			}
+		} else {
+			v.checkStructField(fieldName, field, validator)
+		}
+	}
 }
 
 func (v *Validator) validateIntFields(value reflect.Value) {
@@ -123,6 +146,13 @@ func (v *Validator) validateStringFields(value reflect.Value) {
 		} else {
 			v.checkStringField(fieldName, field, rule)
 		}
+	}
+}
+
+func (v *Validator) checkStructField(fieldName string, field reflect.Value, validator Validator) {
+	err := validator.Validate(field).(ValidationErrors)
+	if len(err) > 0 {
+		v.errors = append(v.errors, ValidationError{fieldName, err})
 	}
 }
 
