@@ -52,13 +52,15 @@ type Validator struct {
 	errors      ValidationErrors
 	intRules    map[string][]IntRule
 	stringRules map[string][]StringRule
+	isSlice     map[string]bool
 }
 
 func ParseRules(t reflect.Type) (Validator, error) {
-	var result = Validator{
+	var validator = Validator{
 		make(ValidationErrors, 0),
 		make(map[string][]IntRule, 0),
 		make(map[string][]StringRule, 0),
+		make(map[string]bool, 0),
 	}
 	var err error
 
@@ -69,38 +71,59 @@ func ParseRules(t reflect.Type) (Validator, error) {
 		}
 
 		kind := field.Type.Kind()
+		validator.isSlice[field.Name] = false
 		if kind == reflect.Slice {
 			kind = field.Type.Elem().Kind()
+			validator.isSlice[field.Name] = true
 		}
 
 		switch kind {
 		case reflect.Int:
-			result.intRules[field.Name], err = ParseIntRules(fieldTag)
+			validator.intRules[field.Name], err = ParseIntRules(fieldTag)
 		case reflect.String:
-			result.stringRules[field.Name], err = ParseStringRules(fieldTag)
+			validator.stringRules[field.Name], err = ParseStringRules(fieldTag)
 		default:
-			return result, fmt.Errorf("unsupported type %q", kind)
+			return validator, fmt.Errorf("unsupported type %q", kind)
 		}
 		if err != nil {
-			return result, fmt.Errorf("field %q has invalid tag %w", field.Name, err)
+			return validator, fmt.Errorf("field %q has invalid tag %w", field.Name, err)
 		}
 
 	}
-	return result, nil
+	return validator, nil
 }
 
 func (v *Validator) Validate(value reflect.Value) error {
 	v.errors = make(ValidationErrors, 0)
+	v.validateIntFields(value)
+	v.validateStringFields(value)
+	return v.errors
+}
+
+func (v *Validator) validateIntFields(value reflect.Value) {
 	for fieldName, rule := range v.intRules {
 		field := value.FieldByName(fieldName)
-		v.checkIntField(fieldName, field, rule)
+		if v.isSlice[fieldName] {
+			for elemIndex := 0; elemIndex < field.Len(); elemIndex++ {
+				v.checkIntField(fieldName, field.Index(elemIndex), rule)
+			}
+		} else {
+			v.checkIntField(fieldName, field, rule)
+		}
 	}
+}
+
+func (v *Validator) validateStringFields(value reflect.Value) {
 	for fieldName, rule := range v.stringRules {
 		field := value.FieldByName(fieldName)
-		v.checkStringField(fieldName, field, rule)
+		if v.isSlice[fieldName] {
+			for elemIndex := 0; elemIndex < field.Len(); elemIndex++ {
+				v.checkStringField(fieldName, field.Index(elemIndex), rule)
+			}
+		} else {
+			v.checkStringField(fieldName, field, rule)
+		}
 	}
-
-	return v.errors
 }
 
 func (v *Validator) checkIntField(fieldName string, field reflect.Value, rules []IntRule) {

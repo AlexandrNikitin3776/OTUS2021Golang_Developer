@@ -48,10 +48,17 @@ func TestValidate(t *testing.T) {
 			UnsupportedInputType,
 		},
 		{
-			"validate user",
-			User{"id", "user", 25, "example@otus.ru", "user", []string{"1", "2"}, []byte("json")},
+			"validate user ok",
+			User{"012345678901234567890123456789012345", "user", 25, "example@otus.ru", "admin", []string{"01234567890"}, []byte("json")},
+			ValidationErrors{},
+		},
+		{
+			"validate user fail",
+			User{"id", "user", 10, "example", "user", []string{"01234567890", "2"}, []byte("json")},
 			ValidationErrors{
 				{"ID", InvalidStringLen},
+				{"Age", InvalidIntMin},
+				{"Email", InvalidStringRegexp},
 				{"Role", InvalidStringIn},
 				{"Phones", InvalidStringLen},
 			},
@@ -62,6 +69,10 @@ func TestValidate(t *testing.T) {
 			ValidationErrors{
 				{"Version", InvalidStringLen},
 			},
+		},
+		{"validate token",
+			Token{[]byte("header"), []byte("payload"), []byte("signature")},
+			ValidationErrors{},
 		},
 		{
 			"validate response",
@@ -77,7 +88,7 @@ func TestValidate(t *testing.T) {
 			tt := tt
 			t.Parallel()
 			err := Validate(tt.in)
-			require.Equal(t, tt.expectedErr, err, "errors should be equal")
+			require.ElementsMatch(t, tt.expectedErr, err, "errors should be equal")
 			_ = tt
 		})
 	}
