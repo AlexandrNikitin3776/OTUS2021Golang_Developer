@@ -23,11 +23,11 @@ func ParseIntRules(tag string) ([]IntRule, error) {
 	rules := strings.Split(tag, tagDivider)
 	result := make([]IntRule, 0)
 	for _, rule := range rules {
-		if checkFunc, err := ParseIntRule(rule); err != nil {
+		checkFunc, err := ParseIntRule(rule)
+		if err != nil {
 			return nil, err
-		} else {
-			result = append(result, checkFunc)
 		}
+		result = append(result, checkFunc)
 	}
 	return result, nil
 }
@@ -95,11 +95,11 @@ func (ir intRule) getMaxRule(controlValue string) (IntRule, error) {
 func intSetFromSlice(sl []string) (map[int64]struct{}, error) {
 	result := make(map[int64]struct{}, len(sl))
 	for _, value := range sl {
-		if intValue, err := strconv.Atoi(value); err != nil {
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
 			return nil, err
-		} else {
-			result[int64(intValue)] = struct{}{}
 		}
+		result[int64(intValue)] = struct{}{}
 	}
 	return result, nil
 }

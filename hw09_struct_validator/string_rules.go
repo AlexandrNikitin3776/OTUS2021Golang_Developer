@@ -24,11 +24,11 @@ func ParseStringRules(tag string) ([]StringRule, error) {
 	rules := strings.Split(tag, tagDivider)
 	result := make([]StringRule, 0)
 	for _, rule := range rules {
-		if checkFunc, err := ParseStringRule(rule); err != nil {
+		checkFunc, err := ParseStringRule(rule)
+		if err != nil {
 			return nil, err
-		} else {
-			result = append(result, checkFunc)
 		}
+		result = append(result, checkFunc)
 	}
 	return result, nil
 }
