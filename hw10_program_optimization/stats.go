@@ -1,6 +1,7 @@
 package hw10programoptimization
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ type User struct {
 }
 
 type DomainStat map[string]int
+type users []User
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	u, err := getUsers(r)
@@ -28,23 +30,26 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	return countDomains(u, domain)
 }
 
-type users [100_000]User
+func getUsers(r io.Reader) (users, error) {
+	bufferedReader := bufio.NewReader(r)
+	result := make(users, 0)
 
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return
-	}
-
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
+	var user User
+	for {
+		line, err := bufferedReader.ReadBytes('\n')
+		if len(line) == 0 && err != nil {
+			if err == io.EOF {
+				return result, nil
+			}
+			return result, err
 		}
-		result[i] = user
+
+		if err = json.Unmarshal(line, &user); err != nil {
+			return result, err
+		}
+
+		result = append(result, user)
 	}
-	return
 }
 
 func countDomains(u users, domain string) (DomainStat, error) {
