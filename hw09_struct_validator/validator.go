@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 var (
@@ -33,12 +34,12 @@ type ValidationError struct {
 type ValidationErrors []ValidationError
 
 func (v ValidationErrors) Error() string {
-	var result string
-	result += fmt.Sprintln("errors while validation:")
+	var result strings.Builder
+	result.WriteString("errors while validation:\n")
 	for _, err := range v {
-		result += fmt.Sprintf("%v\t%v\n", err.Field, err.Err)
+		result.WriteString(fmt.Sprintf("%v\t%v\n", err.Field, err.Err))
 	}
-	return result
+	return result.String()
 }
 
 func Validate(v interface{}) error {
