@@ -8,7 +8,16 @@ import (
 
 var (
 	UnsupportedInputType = errors.New("unsupported input type")
+	InvalidTagSyntax     = fmt.Errorf("tag must contain %q", tagDefinder)
 )
+
+type UnsupportedTagRuleError struct {
+	rule string
+}
+
+func (err UnsupportedTagRuleError) Error() string {
+	return fmt.Sprintf("tag rule %q isn't supported", err.rule)
+}
 
 const (
 	validationTag string = "validate"

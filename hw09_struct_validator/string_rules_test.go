@@ -2,27 +2,29 @@ package hw09structvalidator
 
 import (
 	"github.com/stretchr/testify/require"
+	"strconv"
 	"testing"
 )
 
 func TestParseStringRule(t *testing.T) {
 	tests := []struct {
-		name    string
-		rule    string
-		wantErr bool
+		name          string
+		rule          string
+		wantErr       bool
+		returnedError error
 	}{
-		{"len ok", "len:32", false},
-		{"regexp ok", "regexp:\\d", false},
-		{"in ok", "in:a", false},
-		{"without : ", "len32", true},
-		{"invalid rule", "invalid:rule", true},
+		{"len ok", "len:32", false, nil},
+		{"regexp ok", "regexp:\\d", false, nil},
+		{"in ok", "in:a", false, nil},
+		{"without ':'", "len32", true, InvalidTagSyntax},
+		{"invalid rule", "invalid:rule", true, UnsupportedTagRuleError{"invalid"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := ParseStringRule(tt.rule)
 
 			if tt.wantErr {
-				require.Error(t, err)
+				require.ErrorIs(t, err, tt.returnedError)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
@@ -38,9 +40,10 @@ func TestStringLenRule(t *testing.T) {
 		checkValueOk   string
 		checkValueFail string
 		wantErr        bool
+		returnedError  error
 	}{
-		{"ok", "2", "aa", "aaa", false},
-		{"invalid arg", "short", "", "", true},
+		{"ok", "2", "aa", "aaa", false, nil},
+		{"invalid arg", "short", "", "", true, strconv.ErrSyntax},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,12 +51,12 @@ func TestStringLenRule(t *testing.T) {
 			got, err := sr.getLenRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.Error(t, err)
+				require.ErrorIs(t, err, tt.returnedError)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
 				require.NoError(t, got(tt.checkValueOk))
-				require.Error(t, got(tt.checkValueFail), InvalidStringLen)
+				require.ErrorIs(t, got(tt.checkValueFail), InvalidStringLen)
 			}
 
 		})
@@ -67,9 +70,10 @@ func TestStringRegexpRule(t *testing.T) {
 		checkValueOk   string
 		checkValueFail string
 		wantErr        bool
+		returnedError  string
 	}{
-		{"ok", "\\d+", "1234", "aaa", false},
-		{"invalid arg", "?d", "", "", true},
+		{"ok", "\\d+", "1234", "aaa", false, ""},
+		{"invalid arg", "?d", "", "", true, "error parsing regexp: missing argument to repetition operator: `?`"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,12 +81,12 @@ func TestStringRegexpRule(t *testing.T) {
 			got, err := sr.getRegexpRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.Error(t, err)
+				require.EqualError(t, err, tt.returnedError)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
 				require.NoError(t, got(tt.checkValueOk))
-				require.Error(t, got(tt.checkValueFail), InvalidStringRegexp)
+				require.ErrorIs(t, got(tt.checkValueFail), InvalidStringRegexp)
 			}
 
 		})
@@ -96,8 +100,9 @@ func TestStringInRule(t *testing.T) {
 		checkValueOk   string
 		checkValueFail string
 		wantErr        bool
+		returnedError  error
 	}{
-		{"ok", "a,b", "a", "c", false},
+		{"ok", "a,b", "a", "c", false, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,12 +110,12 @@ func TestStringInRule(t *testing.T) {
 			got, err := sr.getInRule(tt.controlValue)
 
 			if tt.wantErr {
-				require.Error(t, err)
+				require.ErrorIs(t, err, tt.returnedError)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
 				require.NoError(t, got(tt.checkValueOk))
-				require.Error(t, got(tt.checkValueFail), InvalidStringIn)
+				require.ErrorIs(t, got(tt.checkValueFail), InvalidStringIn)
 			}
 
 		})

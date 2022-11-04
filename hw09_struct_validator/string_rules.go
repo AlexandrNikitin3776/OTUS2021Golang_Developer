@@ -36,13 +36,13 @@ func ParseStringRules(tag string) ([]StringRule, error) {
 func ParseStringRule(rule string) (StringRule, error) {
 	funcName, controlValue, found := strings.Cut(rule, ":")
 	if !found {
-		return nil, fmt.Errorf("tag must contain %v", tagDefinder)
+		return nil, InvalidTagSyntax
 	}
 
 	sr := stringRule{}
 	ruleGetter, found := sr.getRuleGetter(funcName)
 	if !found {
-		return nil, fmt.Errorf("tag rule %q isn't supported", funcName)
+		return nil, UnsupportedTagRuleError{funcName}
 	}
 
 	checkFunc, err := ruleGetter(controlValue)
