@@ -2,7 +2,7 @@ package hw10programoptimization
 
 import (
 	"bufio"
-	"encoding/json"
+	"github.com/mailru/easyjson"
 	"io"
 	"strings"
 )
@@ -45,7 +45,7 @@ func getUsers(r io.Reader, errChannel chan error) <-chan User {
 				break
 			}
 
-			if err = json.Unmarshal(line, &user); err != nil {
+			if err = easyjson.Unmarshal(line, &user); err != nil {
 				errChannel <- err
 				break
 			}
