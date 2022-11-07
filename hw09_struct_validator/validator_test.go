@@ -2,7 +2,7 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
-	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -34,27 +34,90 @@ type (
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
 	}
+
+	Request struct {
+		Id   int `validate:"min:5"`
+		Apps []App
+	}
 )
+
+func TestValidateUnsupportedType(t *testing.T) {
+	expectedErr := UnsupportedInputType
+	err := Validate(42)
+	require.Equal(t, expectedErr, err, "errors should be equal")
+}
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
+		name        string
 		in          interface{}
 		expectedErr error
 	}{
 		{
-			// Place your code here.
+			"validate user ok",
+			User{"012345678901234567890123456789012345", "user", 25, "example@otus.ru", "admin", []string{"01234567890"}, []byte("json")},
+			ValidationErrors{},
 		},
-		// ...
-		// Place your code here.
+		{
+			"validate user fail",
+			User{"id", "user", 10, "example", "user", []string{"01234567890", "2"}, []byte("json")},
+			ValidationErrors{
+				{"ID", InvalidStringLen},
+				{"Age", InvalidIntMin},
+				{"Email", InvalidStringRegexp},
+				{"Role", InvalidStringIn},
+				{"Phones", InvalidStringLen},
+			},
+		},
+		{
+			"validate app ok",
+			App{"01234"},
+			ValidationErrors{},
+		},
+		{
+			"validate app fail",
+			App{"0"},
+			ValidationErrors{
+				{"Version", InvalidStringLen},
+			},
+		},
+		{"validate token ok",
+			Token{[]byte("header"), []byte("payload"), []byte("signature")},
+			ValidationErrors{},
+		},
+		{
+			"validate response ok",
+			Response{200, "322"},
+			ValidationErrors{},
+		},
+		{
+			"validate response fail",
+			Response{155, "322"},
+			ValidationErrors{
+				{"Code", InvalidIntIn},
+			},
+		},
+		{
+			"validate request ok",
+			Request{12345, []App{{"0.0.1"}}},
+			ValidationErrors{},
+		},
+		{
+			"validate request fail",
+			Request{12345, []App{{"0.0.1"}, {"0.1"}}},
+			ValidationErrors{
+				{"Apps", ValidationErrors{
+					{"Version", InvalidStringLen},
+				}}},
+		},
 	}
 
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-
-			// Place your code here.
-			_ = tt
+			err := Validate(tt.in)
+			require.ElementsMatch(t, tt.expectedErr, err, "errors should be equal")
 		})
 	}
 }
