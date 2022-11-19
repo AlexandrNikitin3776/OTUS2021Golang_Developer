@@ -1,11 +1,9 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
-	"fmt"
+	"bufio"
+	"github.com/mailru/easyjson"
 	"io"
-	"io/ioutil"
-	"regexp"
 	"strings"
 )
 
@@ -22,46 +20,58 @@ type User struct {
 type DomainStat map[string]int
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
-	u, err := getUsers(r)
-	if err != nil {
-		return nil, fmt.Errorf("get users error: %w", err)
-	}
-	return countDomains(u, domain)
+	errChannel := make(chan error)
+	defer close(errChannel)
+
+	usersChannel := getUsers(r, errChannel)
+	return countDomains(usersChannel, errChannel, domain)
 }
 
-type users [100_000]User
+func getUsers(r io.Reader, errChannel chan error) <-chan User {
+	usersChannel := make(chan User)
 
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := ioutil.ReadAll(r)
-	if err != nil {
-		return
-	}
+	go func() {
+		defer close(usersChannel)
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
 		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
-			return
+
+		bufferedReader := bufio.NewReader(r)
+		for {
+			line, err := bufferedReader.ReadBytes('\n')
+			if len(line) == 0 && err != nil {
+				if err != io.EOF {
+					errChannel <- err
+				}
+				break
+			}
+
+			if err = easyjson.Unmarshal(line, &user); err != nil {
+				errChannel <- err
+				break
+			}
+
+			usersChannel <- user
 		}
-		result[i] = user
-	}
-	return
+	}()
+
+	return usersChannel
 }
 
-func countDomains(u users, domain string) (DomainStat, error) {
+func countDomains(usersChannel <-chan User, errChannel <-chan error, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 
-	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
+	for {
+		select {
+		case user, ok := <-usersChannel:
+			if !ok {
+				return result, nil
+			}
+			if strings.Contains(user.Email, "."+domain) {
+				foundDomain := strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])
+				result[foundDomain]++
+			}
+		case err := <-errChannel:
 			return nil, err
 		}
-
-		if matched {
-			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
-			num++
-			result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])] = num
-		}
 	}
-	return result, nil
 }
